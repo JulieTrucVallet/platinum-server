@@ -32,7 +32,7 @@ const router = express.Router();
 router.post('/', verifyUser, createRecipe);
 router.get('/', getAllRecipes);
 router.get('/:id', getRecipeById);
-router.put('/:id', verifyUser, updateRecipe);
+router.put('/:id', verifyUser, upload.single('image'), updateRecipe);
 router.delete('/:id', verifyUser, deleteRecipe);
 router.put('/:id/ingredients', verifyUser, updateIngredients);
 

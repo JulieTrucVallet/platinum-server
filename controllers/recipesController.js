@@ -37,15 +37,24 @@ export const getRecipeById = async (req, res) => {
   }
 };
 
-// Mettre à jour une recette
+// Mettre à jour une recette (avec image possible)
 export const updateRecipe = async (req, res) => {
   try {
+    const updatedFields = { ...req.body };
+
+    // Si une nouvelle image est envoyée, on l'ajoute
+    if (req.file) {
+      updatedFields.image = `/uploads/${req.file.filename}`;
+    }
+
     const recipe = await Recipe.findOneAndUpdate(
       { _id: req.params.id, user: req.user.userId },
-      req.body,
+      updatedFields,
       { new: true }
     );
+
     if (!recipe) return res.status(404).json({ message: 'Recette introuvable ou non autorisé' });
+
     res.status(200).json(recipe);
   } catch (err) {
     res.status(400).json({ message: err.message });
