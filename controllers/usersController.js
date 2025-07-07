@@ -29,9 +29,14 @@ export const updateProfile = async (req, res) => {
     const updates = {};
 
     if (email) updates.email = email;
+
     if (password) {
       const salt = await bcrypt.genSalt(10);
       updates.password = await bcrypt.hash(password, salt);
+    }
+
+    if (req.file) {
+      updates.image = `/uploads/${req.file.filename}`;
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -40,24 +45,13 @@ export const updateProfile = async (req, res) => {
       { new: true, runValidators: true }
     ).select('-password');
 
-    res.status(200).json(updatedUser);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-export const updateProfileImage = async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
-
-    if (req.file) {
-      user.image = `/uploads/${req.file.filename}`;
-    }
-
-    await user.save();
-    res.status(200).json({ image: user.image });
+    res.status(200).json({
+      username: updatedUser.username,
+      email: updatedUser.email,
+      image: updatedUser.image,
+      recipeCount: await Recipe.countDocuments({ user: updatedUser._id }),
+      favoriteCount: await Recipe.countDocuments({ favorites: updatedUser._id }),
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -4,17 +4,32 @@ import Recipe from '../models/Recipe.js';
 export const createRecipe = async (req, res) => {
   try {
     const imagePath = req.file ? `/uploads/${req.file.filename}` : '';
+
+    const { title, duration, link } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ message: 'Le champ titre est requis.' });
+    }
+
+    const ingredients = req.body.ingredients ? JSON.parse(req.body.ingredients) : [];
+    const steps = req.body.steps ? req.body.steps.split('\n') : [];
+
     const recipe = await Recipe.create({
-      ...req.body,
-      user: req.user.userId,
-      image: imagePath
+      title,
+      duration,
+      link,
+      ingredients,
+      steps,
+      image: imagePath,
+      user: req.user.userId
     });
+
     res.status(201).json(recipe);
   } catch (err) {
+    console.error("Erreur lors de la création :", err.message);
     res.status(400).json({ message: err.message });
   }
 };
-
 
 // Récupérer toutes les recettes
 export const getAllRecipes = async (req, res) => {
@@ -42,7 +57,14 @@ export const updateRecipe = async (req, res) => {
   try {
     const updatedFields = { ...req.body };
 
-    // Si une nouvelle image est envoyée, on l'ajoute
+    if (updatedFields.ingredients && typeof updatedFields.ingredients === 'string') {
+      updatedFields.ingredients = JSON.parse(updatedFields.ingredients);
+    }
+
+    if (updatedFields.steps && typeof updatedFields.steps === 'string') {
+      updatedFields.steps = updatedFields.steps.split('\n');
+    }
+
     if (req.file) {
       updatedFields.image = `/uploads/${req.file.filename}`;
     }

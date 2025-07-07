@@ -29,7 +29,7 @@ const upload = multer({ storage });
 const router = express.Router();
 
 // CRUD Recettes
-router.post('/', verifyUser, createRecipe);
+router.post('/', verifyUser, upload.single('image'), createRecipe);
 router.get('/', getAllRecipes);
 router.get('/:id', getRecipeById);
 router.put('/:id', verifyUser, upload.single('image'), updateRecipe);

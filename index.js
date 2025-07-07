@@ -4,9 +4,12 @@ import express from 'express';
 import mongoose from 'mongoose';
 import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
+import categoryRoutes from './routes/category.js';
+import commentRoutes from './routes/comment.js';
 import { default as recipeRoutes, default as recipesRoutes } from './routes/recipes.js';
 import shoppingListRoutes from './routes/shoppingList.js';
 import userRoutes from './routes/users.js';
+
 
 dotenv.config();
 const app = express();
@@ -31,7 +34,8 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/shopping-list', shoppingListRoutes);
 app.use('/api', recipesRoutes);
 app.use('/api/admin', adminRoutes);
-
+app.use('/api/comments', commentRoutes);
+app.use('/api/categories', categoryRoutes);
 
 
 app.listen(PORT, () => {

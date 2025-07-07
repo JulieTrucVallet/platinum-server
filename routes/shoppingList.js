@@ -13,7 +13,8 @@ const router = express.Router();
 router.post('/', verifyToken, addToShoppingList);
 router.get('/', verifyToken, getShoppingList);
 
-router.delete('/:index', verifyToken, deleteFromShoppingList);
-router.patch('/:index/check', verifyToken, toggleCheckIngredient);
+// ✅ Ici on corrige les routes :
+router.delete('/:id', verifyToken, deleteFromShoppingList);
+router.patch('/:id/check', verifyToken, toggleCheckIngredient);
 
 export default router;

@@ -1,5 +1,11 @@
 import mongoose from 'mongoose';
 
+const ingredientSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  quantity: { type: String, default: '' },
+  checked: { type: Boolean, default: false }
+}, { _id: true });
+
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -27,13 +33,7 @@ const userSchema = new mongoose.Schema({
     default: ''
   },
   shoppingList: {
-  type: [
-    {
-      name: { type: String, required: true },
-      quantity: { type: String, default: '' },
-      checked: { type: Boolean, default: false }
-    }
-  ],
+  type: [ingredientSchema],
   default: []
 }
 }, { timestamps: true });
