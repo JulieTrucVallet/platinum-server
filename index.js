@@ -14,10 +14,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true
-}));
+const corsOptions = {
+  origin: 'https://platinum-client.onrender.com',
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
 
 app.use(express.json());
 
