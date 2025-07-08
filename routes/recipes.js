@@ -1,5 +1,5 @@
 import express from "express";
-import multer from "multer";
+//import multer from "multer";
 import {
   createRecipe,
   deleteRecipe,
@@ -13,9 +13,10 @@ import {
 } from "../controllers/recipesController.js";
 import verifyToken from "../middlewares/auth.js";
 import checkAdmin from "../middlewares/checkAdmin.js";
+import upload from "../middlewares/uploadImage.js";
 import verifyUser from "../middlewares/verifyUser.js";
 
-// Configure multer for image upload
+/* // Configure multer for image upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -24,7 +25,7 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + "-" + file.originalname);
   },
 });
-const upload = multer({ storage });
+const upload = multer({ storage }); */
 
 const router = express.Router();
 
@@ -45,13 +46,13 @@ router.get("/user/favorites", verifyUser, getUserFavorites);
 // Admin route
 router.get("/admin/recipes", verifyToken, checkAdmin, getAllRecipesForAdmin);
 
-// Upload image (optional utility route)
+/* // Upload image (optional utility route)
 router.post("/upload", upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No file received" });
   const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
     req.file.filename
   }`;
   res.status(200).json({ imageUrl });
-});
+}); */
 
 export default router;

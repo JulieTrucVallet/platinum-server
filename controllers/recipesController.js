@@ -3,22 +3,20 @@ import Recipe from "../models/Recipe.js";
 // POST - Create a new recipe (with optional image)
 export const createRecipe = async (req, res) => {
   try {
-    // Build image path if a file is uploaded
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : "";
+    // Cloudinary fournit déjà l’URL complète
+    const imagePath = req.file ? req.file.path : "";
+
     const { title, duration, link } = req.body;
 
-    // Title is required
     if (!title) {
       return res.status(400).json({ message: "Title is required." });
     }
 
-    // Parse ingredients and steps (from strings)
     const ingredients = req.body.ingredients
       ? JSON.parse(req.body.ingredients)
       : [];
     const steps = req.body.steps ? req.body.steps.split("\n") : [];
 
-    // Create the recipe in the DB
     const recipe = await Recipe.create({
       title,
       duration,
@@ -65,7 +63,6 @@ export const updateRecipe = async (req, res) => {
   try {
     const updatedFields = { ...req.body };
 
-    // Handle possible stringified fields
     if (
       updatedFields.ingredients &&
       typeof updatedFields.ingredients === "string"
@@ -77,12 +74,10 @@ export const updateRecipe = async (req, res) => {
       updatedFields.steps = updatedFields.steps.split("\n");
     }
 
-    // Handle image update
     if (req.file) {
-      updatedFields.image = `/uploads/${req.file.filename}`;
+      updatedFields.image = req.file.path; // ici Cloudinary renvoie l'URL
     }
 
-    // Update only if the recipe belongs to the user
     const recipe = await Recipe.findOneAndUpdate(
       { _id: req.params.id, user: req.user.userId },
       updatedFields,
@@ -99,6 +94,7 @@ export const updateRecipe = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
 
 // DELETE - Delete a recipe (if owned by user)
 export const deleteRecipe = async (req, res) => {
