@@ -1,10 +1,25 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
+// Schema for a comment on a recipe
 const commentSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  recipe: { type: mongoose.Schema.Types.ObjectId, ref: 'Recipe', required: true },
-  content: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  recipe: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Recipe",
+    required: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-export default mongoose.model('Comment', commentSchema);
+export default mongoose.model("Comment", commentSchema);

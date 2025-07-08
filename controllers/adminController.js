@@ -1,16 +1,16 @@
-import Recipe from '../models/Recipe.js';
+import Recipe from "../models/Recipe.js";
 
-// GET - Toutes les recettes
+// GET - Fetch all recipes
 export const getAllRecipes = async (req, res) => {
   try {
-    const recipes = await Recipe.find().populate('user', 'username');
+    const recipes = await Recipe.find().populate("user", "username");
     res.status(200).json(recipes);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// POST - Créer une recette
+// POST - Create a new recipe
 export const createRecipe = async (req, res) => {
   try {
     const newRecipe = await Recipe.create(req.body);
@@ -20,26 +20,26 @@ export const createRecipe = async (req, res) => {
   }
 };
 
-// PUT - Modifier une recette
+// PUT - Update a recipe by ID
 export const updateRecipe = async (req, res) => {
   try {
     const updated = await Recipe.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
+      new: true, // Return updated document
+      runValidators: true, // Validate before updating
     });
-    if (!updated) return res.status(404).json({ message: 'Recette non trouvée' });
+    if (!updated) return res.status(404).json({ message: "Recipe not found" });
     res.status(200).json(updated);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
-// DELETE - Supprimer une recette
+// DELETE - Delete a recipe by ID
 export const deleteRecipe = async (req, res) => {
   try {
     const deleted = await Recipe.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Recette non trouvée' });
-    res.status(200).json({ message: 'Recette supprimée' });
+    if (!deleted) return res.status(404).json({ message: "Recipe not found" });
+    res.status(200).json({ message: "Recipe deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

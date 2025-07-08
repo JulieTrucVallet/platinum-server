@@ -1,0 +1,46 @@
+####################################################### PLATINUM ########################################################################
+
+A fullstack web app allowing users to create, save, view, and share recipes, while managing their favorite recipes and a shopping list. An admin backoffice allows moderation and management of content.
+
+## Project Objective
+
+- Build a modern fullstack application (frontend + backend)
+- Meet professional standards (accessibility, security, UX, MVC, REST API, etc.)
+- Present it for evaluation to obtain the *Fullstack Web Developer* diploma (RNCP 37273)
+
+## Tech Stack
+
+### Frontend
+- **React** with **Vite**
+- **SCSS**
+- **Axios** for API communication
+- **React Router** for navigation
+
+### Backend
+- **Node.js + Express**
+- **MongoDB** (Mongoose)
+- **JWT** for authentication
+- **Bcrypt.js** for password hashing
+- **Multer** for image upload
+
+## Setup Instructions
+
+### 1. Clone the repositories
+```bash
+git clone https://github.com/JulieTrucVallet/platinum-client.git
+git clone https://github.com/JulieTrucVallet/platinum-server.git
+```
+
+### 2. Setup the backend
+```bash
+cd platinum-server
+npm install
+npm run dev
+```
+
+### 3. Setup the frontend
+```bash
+cd ../platinum-client
+npm install
+npm run dev
+```
