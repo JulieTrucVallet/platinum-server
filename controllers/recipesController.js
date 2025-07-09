@@ -3,19 +3,22 @@ import Recipe from "../models/Recipe.js";
 // POST - Create a new recipe (with optional image)
 export const createRecipe = async (req, res) => {
   try {
-    const imagePath = req.file ? req.file.path : "";
-
+    // Build image path if a file is uploaded
+    const imagePath = req.file ? `/uploads/${req.file.filename}` : "";
     const { title, duration, link } = req.body;
 
+    // Title is required
     if (!title) {
       return res.status(400).json({ message: "Title is required." });
     }
 
+    // Parse ingredients and steps (from strings)
     const ingredients = req.body.ingredients
       ? JSON.parse(req.body.ingredients)
       : [];
     const steps = req.body.steps ? req.body.steps.split("\n") : [];
 
+    // Create the recipe in the DB
     const recipe = await Recipe.create({
       title,
       duration,
@@ -76,7 +79,7 @@ export const updateRecipe = async (req, res) => {
 
     // Handle image update
     if (req.file) {
-      updatedFields.image = req.file.path;
+      updatedFields.image = `/uploads/${req.file.filename}`;
     }
 
     // Update only if the recipe belongs to the user
