@@ -3,7 +3,6 @@ import Recipe from "../models/Recipe.js";
 // POST - Create a new recipe (with optional image)
 export const createRecipe = async (req, res) => {
   try {
-    // Cloudinary fournit déjà l’URL complète
     const imagePath = req.file ? req.file.path : "";
 
     const { title, duration, link } = req.body;
@@ -63,6 +62,7 @@ export const updateRecipe = async (req, res) => {
   try {
     const updatedFields = { ...req.body };
 
+    // Handle possible stringified fields
     if (
       updatedFields.ingredients &&
       typeof updatedFields.ingredients === "string"
@@ -74,10 +74,12 @@ export const updateRecipe = async (req, res) => {
       updatedFields.steps = updatedFields.steps.split("\n");
     }
 
+    // Handle image update
     if (req.file) {
-      updatedFields.image = req.file.path; // ici Cloudinary renvoie l'URL
+      updatedFields.image = req.file.path;
     }
 
+    // Update only if the recipe belongs to the user
     const recipe = await Recipe.findOneAndUpdate(
       { _id: req.params.id, user: req.user.userId },
       updatedFields,
@@ -94,7 +96,6 @@ export const updateRecipe = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
-
 
 // DELETE - Delete a recipe (if owned by user)
 export const deleteRecipe = async (req, res) => {
