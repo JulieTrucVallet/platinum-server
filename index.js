@@ -46,7 +46,15 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 // --- Uploads locaux (si tu restes sur Multer disque)
-app.use("/uploads", express.static(path.resolve("uploads")));
+app.use(
+  "/uploads",
+  (req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*"); // autorise tout (ou remplace par ton domaine front uniquement)
+    res.header("Cross-Origin-Resource-Policy", "cross-origin");
+    next();
+  },
+  express.static(path.resolve("uploads"))
+);
 
 // --- Routes API
 app.use("/api/auth", authRoutes);
