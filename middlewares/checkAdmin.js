@@ -1,11 +1,6 @@
-// Middleware to restrict access to admin users only
-const checkAdmin = (req, res, next) => {
+export default function checkAdmin(req, res, next) {
   if (req.user?.role !== "admin") {
-    return res
-      .status(403)
-      .json({ message: "Access restricted to administrators only." });
+    return res.status(403).json({ message: "Accès interdit. Admin requis." });
   }
   next();
-};
-
-export default checkAdmin;
+}

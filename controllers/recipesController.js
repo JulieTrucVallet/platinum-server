@@ -1,13 +1,14 @@
 import Recipe from "../models/Recipe.js";
 
+// Fonction utilitaire pour construire une URL absolue
+const getFullUrl = (req, filename) => {
+  return `${req.protocol}://${req.get("host")}/uploads/${filename}`;
+};
+
 // POST - Create a new recipe (with optional image)
 export const createRecipe = async (req, res) => {
   try {
-    // Build image path if a file is uploaded (URL complète)
-    const imagePath = req.file
-      ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
-      : "";
-
+    const imagePath = req.file ? getFullUrl(req, req.file.filename) : "";
     const { title, duration, link } = req.body;
 
     if (!title) {
@@ -65,7 +66,10 @@ export const updateRecipe = async (req, res) => {
   try {
     const updatedFields = { ...req.body };
 
-    if (updatedFields.ingredients && typeof updatedFields.ingredients === "string") {
+    if (
+      updatedFields.ingredients &&
+      typeof updatedFields.ingredients === "string"
+    ) {
       updatedFields.ingredients = JSON.parse(updatedFields.ingredients);
     }
 
@@ -73,9 +77,8 @@ export const updateRecipe = async (req, res) => {
       updatedFields.steps = updatedFields.steps.split("\n");
     }
 
-    // 🔥 URL complète si nouvelle image
     if (req.file) {
-      updatedFields.image = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+      updatedFields.image = getFullUrl(req, req.file.filename);
     }
 
     const recipe = await Recipe.findOneAndUpdate(
@@ -84,8 +87,11 @@ export const updateRecipe = async (req, res) => {
       { new: true }
     );
 
-    if (!recipe)
-      return res.status(404).json({ message: "Recipe not found or not authorized" });
+    if (!recipe) {
+      return res
+        .status(404)
+        .json({ message: "Recipe not found or not authorized" });
+    }
 
     res.status(200).json(recipe);
   } catch (err) {
@@ -100,10 +106,11 @@ export const deleteRecipe = async (req, res) => {
       _id: req.params.id,
       user: req.user.userId,
     });
-    if (!recipe)
+    if (!recipe) {
       return res
         .status(404)
         .json({ message: "Recipe not found or not authorized" });
+    }
     res.status(200).json({ message: "Recipe deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -164,7 +171,7 @@ export const updateIngredients = async (req, res) => {
   }
 };
 
-// GET - Get all recipes (admin only, no user filtering)
+// GET - Get all recipes (admin only)
 export const getAllRecipesForAdmin = async (req, res) => {
   try {
     const recipes = await Recipe.find();

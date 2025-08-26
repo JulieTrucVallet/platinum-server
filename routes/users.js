@@ -1,11 +1,18 @@
 import express from "express";
 import { getProfile, updateProfile } from "../controllers/usersController.js";
 import verifyToken from "../middlewares/auth.js";
-import upload from "../middlewares/cloudinary.js"; // 🔹 nouveau middleware
+import uploadCloud from "../middlewares/cloudinary.js";
+// import uploadLocal from "../middlewares/uploadImage.js"; // 👉 si tu veux tester en local
 
 const router = express.Router();
 
+// --- Profil utilisateur
 router.get("/profile", verifyToken, getProfile);
-router.put("/profile", verifyToken, upload.single("image"), updateProfile);
+
+// ✅ par défaut Cloudinary
+router.put("/profile", verifyToken, uploadCloud.single("image"), updateProfile);
+
+// 🚀 si tu veux tester en local au lieu de Cloudinary, décommente juste :
+// router.put("/profile", verifyToken, uploadLocal.single("image"), updateProfile);
 
 export default router;

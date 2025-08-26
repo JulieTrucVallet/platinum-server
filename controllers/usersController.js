@@ -4,6 +4,11 @@ import jwt from "jsonwebtoken";
 import Recipe from "../models/Recipe.js";
 import User from "../models/User.js";
 
+// Fonction utilitaire pour URL absolue
+const getFullUrl = (req, filename) => {
+  return `${req.protocol}://${req.get("host")}/uploads/${filename}`;
+};
+
 // Récupérer le profil utilisateur connecté
 export const getProfile = async (req, res) => {
   try {
@@ -41,14 +46,12 @@ export const updateProfile = async (req, res) => {
     if (req.file) {
       const user = await User.findById(req.user.userId);
 
-      // Supprime l'ancienne image de Cloudinary si elle existe
       if (user?.image?.public_id) {
         await cloudinary.uploader.destroy(user.image.public_id);
       }
 
-      // Ajoute la nouvelle (URL complète)
       updates.image = {
-        url: `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`,
+        url: getFullUrl(req, req.file.filename),
         public_id: req.file.filename,
       };
     }
@@ -80,13 +83,11 @@ export const registerUser = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Vérifier si l'email existe déjà
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email déjà utilisé" });
     }
 
-    // Créer l'utilisateur (le hash sera géré par le pre("save") du modèle User)
     const user = new User({ username, email, password });
     await user.save();
 
@@ -101,19 +102,16 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Vérifier que l'utilisateur existe
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: "Utilisateur non trouvé" });
     }
 
-    // Vérifier le mot de passe
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Mot de passe incorrect" });
     }
 
-    // Générer un token JWT
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,

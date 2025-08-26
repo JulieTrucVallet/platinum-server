@@ -12,16 +12,16 @@ import checkAdmin from "../middlewares/checkAdmin.js";
 
 const router = express.Router();
 
-// Toutes les routes admin protégées
+// ✅ Toutes les routes admin sont protégées
 router.use(verifyToken, checkAdmin);
 
-// Recettes
+// --- Recettes
 router.get("/recipes", getAllRecipes);
 router.post("/recipes", createRecipe);
 router.put("/recipes/:id", updateRecipe);
 router.delete("/recipes/:id", deleteRecipe);
 
-// Utilisateurs
+// --- Utilisateurs
 router.get("/users", getAllUsers);
 router.delete("/users/:id", deleteUser);
 

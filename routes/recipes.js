@@ -10,29 +10,33 @@ import {
   updateRecipe,
 } from "../controllers/recipesController.js";
 import verifyToken from "../middlewares/auth.js";
-import uploadImage from "../middlewares/uploadImage.js";
+import uploadCloud from "../middlewares/cloudinary.js";
+// import uploadLocal from "../middlewares/uploadImage.js"; // 👉 si tu veux tester en local
 
 const router = express.Router();
 
-// Public
+// --- Public
 router.get("/", getAllRecipes);
+
+// ⚠️ doit être avant "/:id"
+router.get("/user/favorites", verifyToken, getUserFavorites);
 router.get("/:id", getRecipeById);
 
-// Authentifié : création / édition / suppression
-router.post("/", verifyToken, uploadImage.single("image"), createRecipe);
-router.put("/:id", verifyToken, uploadImage.single("image"), updateRecipe);
+// --- Authentifié : création / édition / suppression
+// ✅ par défaut Cloudinary
+router.post("/", verifyToken, uploadCloud.single("image"), createRecipe);
+router.put("/:id", verifyToken, uploadCloud.single("image"), updateRecipe);
+
+// 🚀 si tu veux tester local au lieu de Cloudinary, décommente juste :
+// router.post("/", verifyToken, uploadLocal.single("image"), createRecipe);
+// router.put("/:id", verifyToken, uploadLocal.single("image"), updateRecipe);
+
 router.delete("/:id", verifyToken, deleteRecipe);
 
-// Ingrédients (si tu l’utilises)
+// --- Ingrédients
 router.patch("/:id/ingredients", verifyToken, updateIngredients);
 
-// Favoris
+// --- Favoris
 router.post("/:id/favorite", verifyToken, toggleFavorite);
-router.get("/user/favorites", verifyToken, getUserFavorites);
-
-// ⚠️ SUPPRIMÉ dans ce fichier :
-// - la route "/admin/recipes" (elle va uniquement dans routes/admin.js)
-// - l’import direct de "multer"
-// - la route utilitaire "/upload" (inutile si tu passes par uploadImage)
 
 export default router;

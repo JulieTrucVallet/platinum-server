@@ -1,21 +1,20 @@
-import { v2 as cloudinary } from "cloudinary";
 import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
+import path from "path";
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "platinum",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+// Stockage en local (dans /uploads)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // dossier uploads à la racine
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
   },
 });
 
-const uploadImage = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+// Limite de taille : 5 Mo
+const uploadImage = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 export default uploadImage;
