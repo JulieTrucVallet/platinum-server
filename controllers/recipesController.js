@@ -8,6 +8,11 @@ const getImageUrl = (file) => {
 
 // POST - Create a new recipe (with optional image)
 export const createRecipe = async (req, res) => {
+  console.log("📥 Requête reçue /api/recipes");
+  console.log("Headers:", req.headers);
+  console.log("User:", req.user);
+  console.log("Body:", req.body);
+  console.log("File:", req.file);
   try {
     console.log("📝 Body reçu:", req.body);
     console.log("📂 Fichier reçu:", req.file);
