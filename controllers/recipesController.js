@@ -3,22 +3,22 @@ import Recipe from "../models/Recipe.js";
 // POST - Create a new recipe (with optional image)
 export const createRecipe = async (req, res) => {
   try {
-    // Build image path if a file is uploaded
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : "";
+    // Build image path if a file is uploaded (URL complète)
+    const imagePath = req.file
+      ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+      : "";
+
     const { title, duration, link } = req.body;
 
-    // Title is required
     if (!title) {
       return res.status(400).json({ message: "Title is required." });
     }
 
-    // Parse ingredients and steps (from strings)
     const ingredients = req.body.ingredients
       ? JSON.parse(req.body.ingredients)
       : [];
     const steps = req.body.steps ? req.body.steps.split("\n") : [];
 
-    // Create the recipe in the DB
     const recipe = await Recipe.create({
       title,
       duration,
@@ -65,11 +65,7 @@ export const updateRecipe = async (req, res) => {
   try {
     const updatedFields = { ...req.body };
 
-    // Handle possible stringified fields
-    if (
-      updatedFields.ingredients &&
-      typeof updatedFields.ingredients === "string"
-    ) {
+    if (updatedFields.ingredients && typeof updatedFields.ingredients === "string") {
       updatedFields.ingredients = JSON.parse(updatedFields.ingredients);
     }
 
@@ -77,12 +73,11 @@ export const updateRecipe = async (req, res) => {
       updatedFields.steps = updatedFields.steps.split("\n");
     }
 
-    // Handle image update
+    // 🔥 URL complète si nouvelle image
     if (req.file) {
-      updatedFields.image = `/uploads/${req.file.filename}`;
+      updatedFields.image = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
     }
 
-    // Update only if the recipe belongs to the user
     const recipe = await Recipe.findOneAndUpdate(
       { _id: req.params.id, user: req.user.userId },
       updatedFields,
@@ -90,9 +85,7 @@ export const updateRecipe = async (req, res) => {
     );
 
     if (!recipe)
-      return res
-        .status(404)
-        .json({ message: "Recipe not found or not authorized" });
+      return res.status(404).json({ message: "Recipe not found or not authorized" });
 
     res.status(200).json(recipe);
   } catch (err) {

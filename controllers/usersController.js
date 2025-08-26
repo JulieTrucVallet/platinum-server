@@ -46,10 +46,10 @@ export const updateProfile = async (req, res) => {
         await cloudinary.uploader.destroy(user.image.public_id);
       }
 
-      // Ajoute la nouvelle
+      // Ajoute la nouvelle (URL complète)
       updates.image = {
-        url: req.file.path,
-        public_id: req.file.filename
+        url: `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`,
+        public_id: req.file.filename,
       };
     }
 
