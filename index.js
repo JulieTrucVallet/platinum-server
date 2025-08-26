@@ -49,7 +49,7 @@ app.use(morgan("dev"));
 app.use(
   "/uploads",
   (req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*"); // autorise tout (ou remplace par ton domaine front uniquement)
+    res.header("Access-Control-Allow-Origin", "https://platinum-client.onrender.com"); 
     res.header("Cross-Origin-Resource-Policy", "cross-origin");
     next();
   },
