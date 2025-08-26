@@ -9,6 +9,9 @@ const getImageUrl = (file) => {
 // POST - Create a new recipe (with optional image)
 export const createRecipe = async (req, res) => {
   try {
+    console.log("📝 Body reçu:", req.body);
+    console.log("📂 Fichier reçu:", req.file);
+
     const imagePath = getImageUrl(req.file);
     const { title, duration, link } = req.body;
 
@@ -16,9 +19,16 @@ export const createRecipe = async (req, res) => {
       return res.status(400).json({ message: "Title is required." });
     }
 
-    const ingredients = req.body.ingredients
-      ? JSON.parse(req.body.ingredients)
-      : [];
+    let ingredients = [];
+    if (req.body.ingredients) {
+      try {
+        ingredients = JSON.parse(req.body.ingredients);
+      } catch (e) {
+        console.error("❌ Erreur parse ingredients:", req.body.ingredients);
+        return res.status(400).json({ message: "Invalid ingredients format" });
+      }
+    }
+
     const steps = req.body.steps ? req.body.steps.split("\n") : [];
 
     const recipe = await Recipe.create({
@@ -34,7 +44,7 @@ export const createRecipe = async (req, res) => {
     res.status(201).json(recipe);
   } catch (err) {
     console.error("🔥 Error creating recipe:", err);
-    res.status(400).json({ message: err.message });
+    res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 };
 
