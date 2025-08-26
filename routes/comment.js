@@ -3,11 +3,14 @@ import {
     addComment,
     getCommentsByRecipe,
 } from "../controllers/commentController.js";
-import protect from "../middlewares/auth.js";
+import verifyToken from "../middlewares/auth.js";
 
 const router = express.Router();
 
-router.post("/:recipeId", protect, addComment);
+// Ajouter un commentaire (auth requis)
+router.post("/:recipeId", verifyToken, addComment);
+
+// Récupérer les commentaires d'une recette (public)
 router.get("/:recipeId", getCommentsByRecipe);
 
 export default router;

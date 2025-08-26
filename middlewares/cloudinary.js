@@ -1,6 +1,9 @@
 import { v2 as cloudinary } from "cloudinary";
+import dotenv from "dotenv";
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
+
+dotenv.config();
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -10,12 +13,13 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
+  params: async (req, file) => ({
     folder: "platinum",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
-  },
+    format: file.mimetype.split("/")[1],
+    public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
+  }),
 });
 
-const uploadImage = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({ storage });
 
-export default uploadImage;
+export default upload;

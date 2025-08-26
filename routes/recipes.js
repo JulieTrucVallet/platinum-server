@@ -1,10 +1,8 @@
 import express from "express";
-import multer from "multer";
 import {
   createRecipe,
   deleteRecipe,
   getAllRecipes,
-  getAllRecipesForAdmin,
   getRecipeById,
   getUserFavorites,
   toggleFavorite,
@@ -12,46 +10,29 @@ import {
   updateRecipe,
 } from "../controllers/recipesController.js";
 import verifyToken from "../middlewares/auth.js";
-import checkAdmin from "../middlewares/checkAdmin.js";
-import verifyUser from "../middlewares/verifyUser.js";
-
-// Configure multer for image upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
-});
-const upload = multer({ storage });
+import uploadImage from "../middlewares/uploadImage.js";
 
 const router = express.Router();
 
-// Public routes
+// Public
 router.get("/", getAllRecipes);
 router.get("/:id", getRecipeById);
 
-// Protected user routes
-router.post("/", verifyUser, upload.single("image"), createRecipe);
-router.put("/:id", verifyUser, upload.single("image"), updateRecipe);
-router.delete("/:id", verifyUser, deleteRecipe);
-router.put("/:id/ingredients", verifyUser, updateIngredients);
+// Authentifié : création / édition / suppression
+router.post("/", verifyToken, uploadImage.single("image"), createRecipe);
+router.put("/:id", verifyToken, uploadImage.single("image"), updateRecipe);
+router.delete("/:id", verifyToken, deleteRecipe);
 
-// Favorites management
-router.post("/:id/favorite", verifyUser, toggleFavorite);
-router.get("/user/favorites", verifyUser, getUserFavorites);
+// Ingrédients (si tu l’utilises)
+router.patch("/:id/ingredients", verifyToken, updateIngredients);
 
-// Admin route
-router.get("/admin/recipes", verifyToken, checkAdmin, getAllRecipesForAdmin);
+// Favoris
+router.post("/:id/favorite", verifyToken, toggleFavorite);
+router.get("/user/favorites", verifyToken, getUserFavorites);
 
-// Upload image (optional utility route)
-router.post("/upload", upload.single("image"), (req, res) => {
-  if (!req.file) return res.status(400).json({ message: "No file received" });
-  const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
-    req.file.filename
-  }`;
-  res.status(200).json({ imageUrl });
-});
+// ⚠️ SUPPRIMÉ dans ce fichier :
+// - la route "/admin/recipes" (elle va uniquement dans routes/admin.js)
+// - l’import direct de "multer"
+// - la route utilitaire "/upload" (inutile si tu passes par uploadImage)
 
 export default router;

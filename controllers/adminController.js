@@ -1,4 +1,5 @@
 import Recipe from "../models/Recipe.js";
+import User from "../models/User.js";
 
 // GET - Fetch all recipes
 export const getAllRecipes = async (req, res) => {
@@ -40,6 +41,32 @@ export const deleteRecipe = async (req, res) => {
     const deleted = await Recipe.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Recipe not found" });
     res.status(200).json({ message: "Recipe deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Récupérer tous les utilisateurs
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Supprimer un utilisateur
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    res.status(200).json({ message: "Utilisateur supprimé avec succès" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

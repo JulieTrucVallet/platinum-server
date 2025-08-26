@@ -1,69 +1,134 @@
 import bcrypt from "bcryptjs";
+import { v2 as cloudinary } from "cloudinary";
+import jwt from "jsonwebtoken";
 import Recipe from "../models/Recipe.js";
 import User from "../models/User.js";
 
-// Get current user's profile information
+// Récupérer le profil utilisateur connecté
 export const getProfile = async (req, res) => {
   try {
-    // Find user by ID and exclude the password from the result
     const user = await User.findById(req.user.userId).select("-password");
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
 
-    // Count user's own recipes
-    const recipes = await Recipe.find({ user: user._id });
+    const recipeCount = await Recipe.countDocuments({ user: user._id });
+    const favoriteCount = await Recipe.countDocuments({ favorites: user._id });
 
-    // Count how many recipes the user has marked as favorite
-    const favorites = await Recipe.find({ favorites: user._id });
-
-    // Return profile details
     res.status(200).json({
       username: user.username,
       email: user.email,
       image: user.image,
-      recipeCount: recipes.length,
-      favoriteCount: favorites.length,
+      recipeCount,
+      favoriteCount,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Update user's email, password, or profile image
+// Mettre à jour email, mot de passe ou image de profil
 export const updateProfile = async (req, res) => {
   try {
     const { email, password } = req.body;
     const updates = {};
 
-    // Update email if provided
     if (email) updates.email = email;
 
-    // If a new password is provided, hash it before saving
     if (password) {
       const salt = await bcrypt.genSalt(10);
       updates.password = await bcrypt.hash(password, salt);
     }
 
-    // If a new image is uploaded, update the image path
     if (req.file) {
-      updates.image = `/uploads/${req.file.filename}`;
+      const user = await User.findById(req.user.userId);
+
+      // Supprime l'ancienne image de Cloudinary si elle existe
+      if (user?.image?.public_id) {
+        await cloudinary.uploader.destroy(user.image.public_id);
+      }
+
+      // Ajoute la nouvelle
+      updates.image = {
+        url: req.file.path,
+        public_id: req.file.filename
+      };
     }
 
-    // Update the user in the database
     const updatedUser = await User.findByIdAndUpdate(
       req.user.userId,
       { $set: updates },
       { new: true, runValidators: true }
     ).select("-password");
 
-    // Send back the updated profile info with counts
+    const recipeCount = await Recipe.countDocuments({ user: updatedUser._id });
+    const favoriteCount = await Recipe.countDocuments({ favorites: updatedUser._id });
+
     res.status(200).json({
       username: updatedUser.username,
       email: updatedUser.email,
       image: updatedUser.image,
-      recipeCount: await Recipe.countDocuments({ user: updatedUser._id }),
-      favoriteCount: await Recipe.countDocuments({
-        favorites: updatedUser._id,
-      }),
+      recipeCount,
+      favoriteCount,
+    });
+  } catch (err) {
+    console.error("Erreur updateProfile :", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Register user
+export const registerUser = async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    // Vérifier si l'email existe déjà
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email déjà utilisé" });
+    }
+
+    // Créer l'utilisateur (le hash sera géré par le pre("save") du modèle User)
+    const user = new User({ username, email, password });
+    await user.save();
+
+    res.status(201).json({ message: "Utilisateur créé avec succès" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Login user
+export const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Vérifier que l'utilisateur existe
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: "Utilisateur non trouvé" });
+    }
+
+    // Vérifier le mot de passe
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Mot de passe incorrect" });
+    }
+
+    // Générer un token JWT
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(200).json({
+      message: "Connexion réussie",
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
