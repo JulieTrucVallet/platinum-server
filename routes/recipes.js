@@ -1,4 +1,8 @@
+// routes/recipes.js
 import express from "express";
+import verifyToken from "../middlewares/auth.js";
+import uploadCloud from "../middlewares/cloudinary.js"; // ✅ Cloudinary
+// import uploadLocal from "../middlewares/uploadImage.js";    // ⬅️ fallback local si besoin
 import {
   createRecipe,
   deleteRecipe,
@@ -9,34 +13,28 @@ import {
   updateIngredients,
   updateRecipe,
 } from "../controllers/recipesController.js";
-import verifyToken from "../middlewares/auth.js";
-import uploadCloud from "../middlewares/cloudinary.js";
-// import uploadLocal from "../middlewares/uploadImage.js"; // 👉 si tu veux tester en local
 
 const router = express.Router();
 
-// --- Public
+// Liste + création
 router.get("/", getAllRecipes);
-
-// ⚠️ doit être avant "/:id"
-router.get("/user/favorites", verifyToken, getUserFavorites);
 router.get("/:id", getRecipeById);
 
-// --- Authentifié : création / édition / suppression
-// ✅ par défaut Cloudinary
-router.post("/", verifyToken, uploadCloud.single("image"), createRecipe);
-router.put("/:id", verifyToken, uploadCloud.single("image"), updateRecipe);
-
-// 🚀 si tu veux tester local au lieu de Cloudinary, décommente juste :
+// ✅ image via Cloudinary (sinon décommente uploadLocal)
 // router.post("/", verifyToken, uploadLocal.single("image"), createRecipe);
+router.post("/", verifyToken, uploadCloud.single("image"), createRecipe);
+
+// ✅ update avec ou sans nouvelle image
 // router.put("/:id", verifyToken, uploadLocal.single("image"), updateRecipe);
+router.put("/:id", verifyToken, uploadCloud.single("image"), updateRecipe);
 
 router.delete("/:id", verifyToken, deleteRecipe);
 
-// --- Ingrédients
-router.patch("/:id/ingredients", verifyToken, updateIngredients);
-
-// --- Favoris
+// Favoris
 router.post("/:id/favorite", verifyToken, toggleFavorite);
+router.get("/user/favorites", verifyToken, getUserFavorites);
+
+// Ingrédients
+router.patch("/:id/ingredients", verifyToken, updateIngredients);
 
 export default router;

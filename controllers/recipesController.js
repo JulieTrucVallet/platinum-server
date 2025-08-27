@@ -1,55 +1,56 @@
-import { v2 as cloudinary } from "cloudinary";
+// controllers/recipesController.js
 import Recipe from "../models/Recipe.js";
 
-// --- Utilitaire pour URL locale (si on veut tester sans Cloudinary)
-const getLocalUrl = (req, filename) => {
-  return `${req.protocol}://${req.get("host")}/uploads/${filename}`;
+const toArray = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    // si string JSON -> parse ; sinon on coupe par \n
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (_) { /* not JSON */ }
+    return val.split("\n").map(s => s.trim()).filter(Boolean);
+  }
+  return [];
 };
 
-// --- POST - Create a new recipe (with optional image)
+const toIngredients = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (_) {}
+  }
+  return [];
+};
+
+// Cloudinary renvoie généralement file.path (URL) ; local -> chemin relatif
+const getImageUrl = (req) => {
+  if (!req.file) return "";
+  // Cloudinary
+  if (req.file.path && /^https?:\/\//.test(req.file.path)) return req.file.path;
+  // Local
+  return `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+};
+
+// ------------------ CREATE ------------------
 export const createRecipe = async (req, res) => {
   try {
-    const { title, duration, link } = req.body;
+    const { title, duration, link, category } = req.body;
+    if (!title) return res.status(400).json({ message: "Title is required." });
 
-    if (!title) {
-      return res.status(400).json({ message: "Title is required." });
-    }
-
-    // 🔹 Parsing des ingrédients
-    let ingredients = [];
-    if (req.body.ingredients) {
-      try {
-        ingredients = JSON.parse(req.body.ingredients);
-      } catch (e) {
-        return res.status(400).json({ message: "Invalid ingredients format" });
-      }
-    }
-
-    // 🔹 Parsing des étapes
-    const steps = req.body.steps ? req.body.steps.split("\n") : [];
-
-    // 🔹 Gestion image (Cloudinary ou locale)
-    let image = { url: "", public_id: "" };
-    if (req.file) {
-      if (req.file.path && !req.file.secure_url) {
-        // Upload Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: "platinum/recipes",
-        });
-        image = { url: result.secure_url, public_id: result.public_id };
-      } else if (req.file.secure_url) {
-        // Cas Cloudinary déjà fourni
-        image = { url: req.file.secure_url, public_id: req.file.public_id };
-      } else {
-        // Cas fallback local
-        image = { url: getLocalUrl(req, req.file.filename), public_id: req.file.filename };
-      }
-    }
+    const image = getImageUrl(req); // peut être "" si pas d'image
+    const ingredients = toIngredients(req.body.ingredients);
+    const steps = toArray(req.body.steps);
 
     const recipe = await Recipe.create({
       title,
       duration,
       link,
+      category: category || undefined,
       ingredients,
       steps,
       image,
@@ -58,13 +59,13 @@ export const createRecipe = async (req, res) => {
 
     res.status(201).json(recipe);
   } catch (err) {
-    console.error("🔥 Error creating recipe:", err);
-    res.status(500).json({ message: "Erreur serveur", error: err.message });
+    console.error("🔥 createRecipe error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-// --- GET - Get all recipes (with user info)
-export const getAllRecipes = async (req, res) => {
+// ------------------ READ ------------------
+export const getAllRecipes = async (_req, res) => {
   try {
     const recipes = await Recipe.find().populate("user", "username");
     res.status(200).json(recipes);
@@ -73,10 +74,10 @@ export const getAllRecipes = async (req, res) => {
   }
 };
 
-// --- GET - Get a single recipe by ID
 export const getRecipeById = async (req, res) => {
   try {
-    const recipe = await Recipe.findById(req.params.id).populate("user", "username");
+    const recipe = await Recipe.findById(req.params.id)
+      .populate("user", "username");
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
     res.status(200).json(recipe);
   } catch (err) {
@@ -84,31 +85,32 @@ export const getRecipeById = async (req, res) => {
   }
 };
 
-// --- PUT - Update a recipe
+// ------------------ UPDATE ------------------
 export const updateRecipe = async (req, res) => {
   try {
-    const updatedFields = { ...req.body };
+    const updates = {};
 
-    // Parse si string
-    if (updatedFields.ingredients && typeof updatedFields.ingredients === "string") {
-      updatedFields.ingredients = JSON.parse(updatedFields.ingredients);
-    }
-    if (updatedFields.steps && typeof updatedFields.steps === "string") {
-      updatedFields.steps = updatedFields.steps.split("\n");
-    }
+    // Champs simples
+    if ("title" in req.body)    updates.title = req.body.title;
+    if ("duration" in req.body) updates.duration = req.body.duration;
+    if ("link" in req.body)     updates.link = req.body.link;
+    if ("category" in req.body) updates.category = req.body.category || undefined;
 
-    // 🔹 Nouvelle image
+    // Tableaux
+    if ("ingredients" in req.body)
+      updates.ingredients = toIngredients(req.body.ingredients);
+    if ("steps" in req.body)
+      updates.steps = toArray(req.body.steps);
+
+    // Image : on ne remplace que si nouveau fichier
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "platinum/recipes",
-      });
-      updatedFields.image = { url: result.secure_url, public_id: result.public_id };
+      updates.image = getImageUrl(req);
     }
 
     const recipe = await Recipe.findOneAndUpdate(
       { _id: req.params.id, user: req.user.userId },
-      updatedFields,
-      { new: true }
+      { $set: updates },
+      { new: true, runValidators: true }
     );
 
     if (!recipe) {
@@ -117,12 +119,12 @@ export const updateRecipe = async (req, res) => {
 
     res.status(200).json(recipe);
   } catch (err) {
-    console.error("🔥 Error updating recipe:", err);
+    console.error("🔥 updateRecipe error:", err);
     res.status(400).json({ message: err.message });
   }
 };
 
-// --- DELETE - Delete a recipe (if owned by user)
+// ------------------ DELETE ------------------
 export const deleteRecipe = async (req, res) => {
   try {
     const recipe = await Recipe.findOneAndDelete({
@@ -132,75 +134,53 @@ export const deleteRecipe = async (req, res) => {
     if (!recipe) {
       return res.status(404).json({ message: "Recipe not found or not authorized" });
     }
-
-    // 🔹 Supprimer aussi l’image Cloudinary si elle existe
-    if (recipe.image?.public_id) {
-      await cloudinary.uploader.destroy(recipe.image.public_id);
-    }
-
     res.status(200).json({ message: "Recipe deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// --- PATCH - Toggle favorite (add/remove)
+// ------------------ FAVORITES ------------------
 export const toggleFavorite = async (req, res) => {
   try {
     const recipe = await Recipe.findById(req.params.id);
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
 
     const userId = req.user.userId;
-    const isFavorite = recipe.favorites.includes(userId);
+    const isFavorite = recipe.favorites.some(id => String(id) === String(userId));
 
-    if (isFavorite) {
-      recipe.favorites.pull(userId);
-    } else {
-      recipe.favorites.push(userId);
-    }
+    if (isFavorite) recipe.favorites.pull(userId);
+    else recipe.favorites.push(userId);
 
     await recipe.save();
-    res.status(200).json({
-      message: isFavorite ? "Removed from favorites" : "Added to favorites",
-    });
+    res.status(200).json({ message: isFavorite ? "Removed from favorites" : "Added to favorites" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// --- GET - Get current user's favorite recipes
 export const getUserFavorites = async (req, res) => {
   try {
-    const recipes = await Recipe.find({ favorites: req.user.userId }).populate("user", "username");
+    const recipes = await Recipe.find({ favorites: req.user.userId })
+      .populate("user", "username");
     res.status(200).json(recipes);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// --- PATCH - Update only the ingredients of a recipe
+// ------------------ INGREDIENTS ONLY ------------------
 export const updateIngredients = async (req, res) => {
-  const { id } = req.params;
-  const { ingredients } = req.body;
-
   try {
-    const recipe = await Recipe.findById(id);
+    const ingredients = toIngredients(req.body.ingredients);
+    const recipe = await Recipe.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.userId },
+      { $set: { ingredients } },
+      { new: true }
+    );
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
-
-    recipe.ingredients = ingredients;
-    await recipe.save();
     res.status(200).json(recipe.ingredients);
   } catch (err) {
     res.status(500).json({ message: err.message });
-  }
-};
-
-// --- GET - Get all recipes (admin only)
-export const getAllRecipesForAdmin = async (req, res) => {
-  try {
-    const recipes = await Recipe.find();
-    res.status(200).json(recipes);
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
   }
 };

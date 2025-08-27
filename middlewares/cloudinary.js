@@ -1,25 +1,24 @@
+// middlewares/cloudinary.js
 import { v2 as cloudinary } from "cloudinary";
-import dotenv from "dotenv";
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 
-dotenv.config();
-
+// ⚠️ assure-toi que ces 3 variables existent dans l'env serveur
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
+  api_key:    process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: async (req, file) => ({
-    folder: "platinum",
-    format: file.mimetype.split("/")[1],
-    public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
-  }),
+  params: {
+    folder: "platinum/recipes",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation: [{ quality: "auto", fetch_format: "auto" }],
+  },
 });
 
-const upload = multer({ storage });
+const uploadCloud = multer({ storage });
 
-export default upload;
+export default uploadCloud;

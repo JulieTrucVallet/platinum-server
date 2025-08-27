@@ -1,20 +1,16 @@
+// middlewares/uploadImage.js
+import fs from "fs";
 import multer from "multer";
 import path from "path";
 
-// Stockage en local (dans /uploads)
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/"); // dossier uploads à la racine
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) =>
+    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "_")),
 });
 
-// Limite de taille : 5 Mo
-const uploadImage = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-});
-
-export default uploadImage;
+const uploadLocal = multer({ storage });
+export default uploadLocal;
