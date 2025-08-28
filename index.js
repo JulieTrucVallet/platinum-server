@@ -28,14 +28,15 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Autorise si pas d'origine (ex: Postman) ou si dans la liste
+    origin: (origin, callback) => {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
@@ -45,15 +46,15 @@ app.use(express.json({ limit: "1mb" }));
 app.use(helmet());
 app.use(morgan("dev"));
 
-// Uploads locaux (si reste sur Multer disque)
+// Uploads locaux
 app.use(
   "/uploads",
-  (req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "https://platinum-client.onrender.com"); 
-    res.header("Cross-Origin-Resource-Policy", "cross-origin");
-    next();
-  },
-  express.static(path.resolve("uploads"))
+  express.static(path.resolve("uploads"), {
+    setHeaders: (res) => {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    },
+  })
 );
 
 // Routes API
@@ -84,7 +85,7 @@ mongoose
   .then(() => {
     console.log("✅ Connected to MongoDB");
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   })
   .catch((err) => {
