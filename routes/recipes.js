@@ -1,8 +1,8 @@
 // routes/recipes.js
 import express from "express";
 import verifyToken from "../middlewares/auth.js";
-import uploadCloud from "../middlewares/cloudinary.js"; // ✅ Cloudinary
-// import uploadLocal from "../middlewares/uploadImage.js";    // ⬅️ fallback local si besoin
+import uploadCloud from "../middlewares/cloudinary.js"; // Cloudinary
+// import uploadLocal from "../middlewares/uploadImage.js";    // Local
 import {
   createRecipe,
   deleteRecipe,
@@ -20,11 +20,12 @@ const router = express.Router();
 router.get("/", getAllRecipes);
 router.get("/:id", getRecipeById);
 
-// ✅ image via Cloudinary (sinon décommente uploadLocal)
+// Local
 // router.post("/", verifyToken, uploadLocal.single("image"), createRecipe);
+// Cloudinary
 router.post("/", verifyToken, uploadCloud.single("image"), createRecipe);
 
-// ✅ update avec ou sans nouvelle image
+// update with or without new image
 // router.put("/:id", verifyToken, uploadLocal.single("image"), updateRecipe);
 router.put("/:id", verifyToken, uploadCloud.single("image"), updateRecipe);
 

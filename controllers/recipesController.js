@@ -1,20 +1,21 @@
 // controllers/recipesController.js
 import Recipe from "../models/Recipe.js";
 
+// Helper: make sure a value is always returned as an array
 const toArray = (val) => {
   if (!val) return [];
   if (Array.isArray(val)) return val;
   if (typeof val === "string") {
-    // si string JSON -> parse ; sinon on coupe par \n
     try {
       const parsed = JSON.parse(val);
       if (Array.isArray(parsed)) return parsed;
-    } catch (_) { /* not JSON */ }
+    } catch (_) {}
     return val.split("\n").map(s => s.trim()).filter(Boolean);
   }
   return [];
 };
 
+// Helper: same but specific for ingredients
 const toIngredients = (val) => {
   if (!val) return [];
   if (Array.isArray(val)) return val;
@@ -27,13 +28,11 @@ const toIngredients = (val) => {
   return [];
 };
 
-// Cloudinary renvoie généralement file.path (URL) ; local -> chemin relatif
+// Get image URL (Cloudinary or local upload)
 const getImageUrl = (req) => {
   if (!req.file) return "";
-  // Cloudinary
-  if (req.file.path && /^https?:\/\//.test(req.file.path)) return req.file.path;
-  // Local
-  return `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+  if (req.file.path && /^https?:\/\//.test(req.file.path)) return req.file.path; // Cloudinary
+  return `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;   // Local
 };
 
 // ------------------ CREATE ------------------
@@ -42,7 +41,7 @@ export const createRecipe = async (req, res) => {
     const { title, duration, link, category } = req.body;
     if (!title) return res.status(400).json({ message: "Title is required." });
 
-    const image = getImageUrl(req); // peut être "" si pas d'image
+    const image = getImageUrl(req);
     const ingredients = toIngredients(req.body.ingredients);
     const steps = toArray(req.body.steps);
 
@@ -59,7 +58,7 @@ export const createRecipe = async (req, res) => {
 
     res.status(201).json(recipe);
   } catch (err) {
-    console.error("🔥 createRecipe error:", err);
+    console.error("createRecipe error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -90,19 +89,19 @@ export const updateRecipe = async (req, res) => {
   try {
     const updates = {};
 
-    // Champs simples
+    // Simple fields
     if ("title" in req.body)    updates.title = req.body.title;
     if ("duration" in req.body) updates.duration = req.body.duration;
     if ("link" in req.body)     updates.link = req.body.link;
     if ("category" in req.body) updates.category = req.body.category || undefined;
 
-    // Tableaux
+    // Arrays
     if ("ingredients" in req.body)
       updates.ingredients = toIngredients(req.body.ingredients);
     if ("steps" in req.body)
       updates.steps = toArray(req.body.steps);
 
-    // Image : on ne remplace que si nouveau fichier
+    // Replace image only if a new file is uploaded
     if (req.file) {
       updates.image = getImageUrl(req);
     }
@@ -119,7 +118,7 @@ export const updateRecipe = async (req, res) => {
 
     res.status(200).json(recipe);
   } catch (err) {
-    console.error("🔥 updateRecipe error:", err);
+    console.error("updateRecipe error:", err);
     res.status(400).json({ message: err.message });
   }
 };
@@ -140,7 +139,7 @@ export const deleteRecipe = async (req, res) => {
   }
 };
 
-// ------------------ FAVORITES ------------------
+// FAVORITES
 export const toggleFavorite = async (req, res) => {
   try {
     const recipe = await Recipe.findById(req.params.id);
@@ -169,7 +168,7 @@ export const getUserFavorites = async (req, res) => {
   }
 };
 
-// ------------------ INGREDIENTS ONLY ------------------
+// INGREDIENTS ONLY
 export const updateIngredients = async (req, res) => {
   try {
     const ingredients = toIngredients(req.body.ingredients);

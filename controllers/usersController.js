@@ -4,16 +4,16 @@ import jwt from "jsonwebtoken";
 import Recipe from "../models/Recipe.js";
 import User from "../models/User.js";
 
-// Fonction utilitaire pour URL absolue (upload local)
+// Small helper to build a full URL when using local uploads
 const getFullUrl = (req, filename) => {
   return `${req.protocol}://${req.get("host")}/uploads/${filename}`;
 };
 
-// 🔹 Récupérer le profil utilisateur connecté
+// Get profile of the logged-in user
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("-password");
-    if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     const recipeCount = await Recipe.countDocuments({ user: user._id });
     const favoriteCount = user.favorites.length;
@@ -30,7 +30,7 @@ export const getProfile = async (req, res) => {
   }
 };
 
-// 🔹 Mettre à jour email, mot de passe ou image de profil
+// Update email, password or profile image
 export const updateProfile = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -43,6 +43,7 @@ export const updateProfile = async (req, res) => {
       updates.password = await bcrypt.hash(password, salt);
     }
 
+    // If a new file is uploaded, replace the old profile image
     if (req.file) {
       const user = await User.findById(req.user.userId);
 
@@ -64,19 +65,19 @@ export const updateProfile = async (req, res) => {
 
     res.status(200).json(updatedUser);
   } catch (err) {
-    console.error("Erreur updateProfile :", err);
+    console.error("updateProfile error:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
-// 🔹 Récupérer les favoris de l'utilisateur (avec populate pour voir les images)
+// Get user favorites (populate to show recipe details)
 export const getFavorites = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
-      .populate("favorites") // va chercher les recettes liées
+      .populate("favorites")
       .select("favorites");
 
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     res.status(200).json(user.favorites);
   } catch (err) {
@@ -84,20 +85,20 @@ export const getFavorites = async (req, res) => {
   }
 };
 
-// 🔹 Ajouter / Retirer un favori (toggle)
+// Add or remove a recipe from favorites
 export const toggleFavorite = async (req, res) => {
   try {
     const recipeId = req.params.recipeId;
     const user = await User.findById(req.user.userId);
 
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     const index = user.favorites.indexOf(recipeId);
     if (index > -1) {
-      // déjà en favoris → retirer
+      // already in favorites → remove
       user.favorites.splice(index, 1);
     } else {
-      // pas encore → ajouter
+      // not in favorites → add
       user.favorites.push(recipeId);
     }
 
@@ -110,38 +111,38 @@ export const toggleFavorite = async (req, res) => {
   }
 };
 
-// 🔹 Register user
+// Register a new user
 export const registerUser = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Email déjà utilisé" });
+      return res.status(400).json({ message: "Email already taken" });
     }
 
     const user = new User({ username, email, password });
     await user.save();
 
-    res.status(201).json({ message: "Utilisateur créé avec succès" });
+    res.status(201).json({ message: "User created successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// 🔹 Login user
+// Login user and return JWT
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: "Utilisateur non trouvé" });
+      return res.status(401).json({ message: "User not found" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Mot de passe incorrect" });
+      return res.status(401).json({ message: "Wrong password" });
     }
 
     const token = jwt.sign(
@@ -151,7 +152,7 @@ export const loginUser = async (req, res) => {
     );
 
     res.status(200).json({
-      message: "Connexion réussie",
+      message: "Login successful",
       token,
       user: {
         id: user._id,

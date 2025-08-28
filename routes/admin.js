@@ -12,7 +12,7 @@ import checkAdmin from "../middlewares/checkAdmin.js";
 
 const router = express.Router();
 
-// ✅ Toutes les routes admin sont protégées
+// Toutes les routes admin sont protégées
 router.use(verifyToken, checkAdmin);
 
 // --- Recettes

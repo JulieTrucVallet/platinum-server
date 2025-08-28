@@ -20,7 +20,7 @@ const app = express();
 
 const PORT = Number(process.env.PORT) || 8010;
 
-// --- ✅ CORS dev + prod
+// CORS dev + prod
 const allowedOrigins = [
   "http://localhost:5173", // dev
   "https://platinum-client.onrender.com", // prod
@@ -40,12 +40,12 @@ app.use(
   })
 );
 
-// --- Middlewares globaux
+// Middlewares globaux
 app.use(express.json({ limit: "1mb" }));
 app.use(helmet());
 app.use(morgan("dev"));
 
-// --- Uploads locaux (si tu restes sur Multer disque)
+// Uploads locaux (si reste sur Multer disque)
 app.use(
   "/uploads",
   (req, res, next) => {
@@ -56,7 +56,7 @@ app.use(
   express.static(path.resolve("uploads"))
 );
 
-// --- Routes API
+// Routes API
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/recipes", recipeRoutes);
@@ -65,12 +65,12 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/categories", categoryRoutes);
 
-// --- 404
+// 404
 app.use((req, res) => {
   res.status(404).json({ message: "Route introuvable" });
 });
 
-// --- Handler global erreurs
+// Handler global erreurs
 app.use((err, req, res, next) => {
   console.error("🔥 Server error:", err);
   res.status(err.status || 500).json({
@@ -78,7 +78,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// --- Connexion DB + lancement
+// Connexion DB + lancement
 mongoose
   .connect(process.env.MONGO_DB_URI)
   .then(() => {
